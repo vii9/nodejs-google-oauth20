@@ -6,6 +6,8 @@ const morgan = require('morgan');
 const handlebarsEngine = require('express-handlebars');
 const passport = require('passport');
 const session = require('express-session');
+const mongoose = require('mongoose');
+const MongoStore = require('connect-mongo');
 
 // Load config
 dotenv.config({ path: './config/config.env' });
@@ -30,7 +32,7 @@ if (process.env.NODE_ENV === 'production') {
   sess.cookie.secure = true; // serve secure cookies
 }
 
-// Template engine Handlebars
+// Template engine Handlebars xxYx
 app.engine(
   '.hbs',
   handlebarsEngine.engine({ defaultLayout: 'main', extname: '.hbs' })
@@ -43,6 +45,12 @@ app.use(
     secret: 'keyboard cat',
     resave: false,
     saveUninitialized: false,
+    store: MongoStore.create({
+      mongoUrl: process.env.MONGO_URI,
+      mongooseConnection: mongoose.connection,
+      ttl: 5 * 60, // save session : 60=1 minute lag
+      // ttl: 14 * 24 * 60 * 60 // save session for 14 days
+    }),
   })
 );
 
