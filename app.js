@@ -22,10 +22,23 @@ const PORT = process.env.PORT || 9234;
 
 const app = express();
 
+// Body parser
+app.use(express.urlencoded({ extended: false }));
+app.use(express.json());
+
 // Logging
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
+
+// Handlebars Helpers
+const {
+  formatDate,
+  stripTags,
+  truncate,
+  editIcon,
+  select,
+} = require('./helpers/hbs');
 
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1); // trust first proxy
@@ -35,7 +48,17 @@ if (process.env.NODE_ENV === 'production') {
 // Template engine Handlebars xxYx
 app.engine(
   '.hbs',
-  handlebarsEngine.engine({ defaultLayout: 'main', extname: '.hbs' })
+  handlebarsEngine.engine({
+    helpers: {
+      formatDate,
+      stripTags,
+      truncate,
+      editIcon,
+      select,
+    },
+    defaultLayout: 'main',
+    extname: '.hbs',
+  })
 );
 app.set('view engine', '.hbs');
 app.set('views', './views');
@@ -48,8 +71,8 @@ app.use(
     store: MongoStore.create({
       mongoUrl: process.env.MONGO_URI,
       mongooseConnection: mongoose.connection,
-      ttl: 5 * 60, // save session : 60=1 minute lag
-      // ttl: 14 * 24 * 60 * 60 // save session for 14 days
+      // ttl: 5 * 60, // save session : 60=1 minute lag
+      ttl: 14 * 24 * 60 * 60 // save session for 14 days
     }),
   })
 );
@@ -64,6 +87,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Routes
 app.use('/', require('./routes/index'));
 app.use('/auth', require('./routes/auth'));
+app.use('/stories', require('./routes/stories'));
 
 app.listen(PORT, () => {
   console.log(
