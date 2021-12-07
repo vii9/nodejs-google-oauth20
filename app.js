@@ -8,6 +8,7 @@ const passport = require('passport');
 const session = require('express-session');
 const mongoose = require('mongoose');
 const MongoStore = require('connect-mongo');
+const methodOverride = require('method-override');
 
 // Load config
 dotenv.config({ path: './config/config.env' });
@@ -25,6 +26,18 @@ const app = express();
 // Body parser
 app.use(express.urlencoded({ extended: false }));
 app.use(express.json());
+
+// Method Override
+app.use(
+  methodOverride(function (req, res) {
+    if (req.body && typeof req.body === 'object' && '_method' in req.body) {
+      // look in urlencoded POST bodies and delete it
+      var method = req.body._method;
+      delete req.body._method;
+      return method;
+    }
+  })
+);
 
 // Logging
 if (process.env.NODE_ENV === 'development') {
@@ -72,7 +85,7 @@ app.use(
       mongoUrl: process.env.MONGO_URI,
       mongooseConnection: mongoose.connection,
       // ttl: 5 * 60, // save session : 60=1 minute lag
-      ttl: 14 * 24 * 60 * 60 // save session for 14 days
+      ttl: 14 * 24 * 60 * 60, // save session for 14 days
     }),
   })
 );
@@ -80,6 +93,12 @@ app.use(
 // Passport middleware
 app.use(passport.initialize());
 app.use(passport.session());
+
+// Set Global var
+app.use(function (req, res, next) {
+  res.locals.user = req.user || null;
+  next();
+});
 
 // Static folder
 app.use(express.static(path.join(__dirname, 'public')));
